@@ -1,0 +1,176 @@
+<div class="container-fluid py-4">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center mb-4">
+    <i class="bi bi-file-earmark-arrow-down fs-2 text-primary me-3"></i>
+    <div class="flex-grow-1">
+      <h2 class="mb-0">RCM Import — Workbook Export</h2>
+      <small class="text-muted">Pick an entity, choose columns, choose a format, and download.</small>
+    </div>
+    <span class="badge bg-light text-dark border" *ngIf="entities().length">
+      {{ entities().length }} entities loaded
+    </span>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="errorMsg()" class="alert alert-danger d-flex align-items-center">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    {{ errorMsg() }}
+    <button type="button" class="btn-close ms-auto" (click)="errorMsg.set(null)"></button>
+  </div>
+
+  <!-- Entity selector -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <label class="form-label fw-semibold mb-2">
+        <i class="bi bi-collection me-2"></i>Entity (Sheet)
+      </label>
+      <div class="entity-grid">
+        <button *ngFor="let e of entities()"
+                type="button"
+                class="entity-pill"
+                [class.active]="selectedEntity() === e.name"
+                (click)="selectEntity(e.name)">
+          <span class="entity-name">{{ e.name }}</span>
+          <span class="entity-meta">{{ e.rowCount.toLocaleString() }} rows</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- LEFT: column picker + format -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <strong><i class="bi bi-list-check me-2"></i>Columns</strong>
+          <span class="badge bg-primary rounded-pill">{{ selectedCount() }} selected</span>
+        </div>
+        <div class="card-body">
+
+          <div *ngIf="columns().length === 0" class="text-muted text-center py-3">
+            <i class="bi bi-arrow-up"></i> Pick an entity above
+          </div>
+
+          <ng-container *ngIf="columns().length > 0">
+            <div class="form-check mb-2 border-bottom pb-2">
+              <input class="form-check-input" type="checkbox" id="selectAll"
+                     [checked]="allSelected()"
+                     (change)="toggleSelectAll()">
+              <label class="form-check-label fw-semibold" for="selectAll">
+                Select All
+              </label>
+            </div>
+
+            <div class="column-list">
+              <div class="form-check" *ngFor="let col of columns()">
+                <input class="form-check-input" type="checkbox"
+                       [id]="'col-' + col.field"
+                       [checked]="isSelected(col.field)"
+                       (change)="toggleColumn(col.field)">
+                <label class="form-check-label" [for]="'col-' + col.field">
+                  {{ col.label }}
+                </label>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- Format -->
+      <div class="card shadow-sm mt-4">
+        <div class="card-header bg-white">
+          <strong><i class="bi bi-file-earmark me-2"></i>Format</strong>
+        </div>
+        <div class="card-body">
+          <div class="format-grid">
+            <button type="button" class="format-btn"
+                    [class.active]="format() === 'excel'"
+                    (click)="setFormat('excel')">
+              <i class="bi bi-file-earmark-excel-fill"></i>
+              <span>Excel</span><small>.xlsx</small>
+            </button>
+            <button type="button" class="format-btn"
+                    [class.active]="format() === 'csv'"
+                    (click)="setFormat('csv')">
+              <i class="bi bi-file-earmark-text-fill"></i>
+              <span>CSV</span><small>.csv</small>
+            </button>
+            <button type="button" class="format-btn"
+                    [class.active]="format() === 'pdf'"
+                    (click)="setFormat('pdf')">
+              <i class="bi bi-file-earmark-pdf-fill"></i>
+              <span>PDF</span><small>.pdf</small>
+            </button>
+          </div>
+
+          <button class="btn btn-primary w-100 mt-4"
+                  (click)="download()"
+                  [disabled]="exporting() || selectedCount() === 0 || !selectedEntity()">
+            <span *ngIf="exporting()" class="spinner-border spinner-border-sm me-2"></span>
+            <i *ngIf="!exporting()" class="bi bi-download me-2"></i>
+            {{ exporting() ? 'Generating...' : 'Download ' + (totalRows() | number) + ' rows' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: preview -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <strong><i class="bi bi-table me-2"></i>{{ selectedEntity() || 'No entity' }} — Preview</strong>
+          <small class="text-muted">
+            {{ rows().length }} of {{ totalRows() | number }} shown
+          </small>
+        </div>
+
+        <div class="card-body">
+          <div class="input-group mb-3">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control"
+                   placeholder="Search any column..."
+                   [ngModel]="searchTerm()"
+                   (ngModelChange)="searchTerm.set($event)">
+          </div>
+
+          <div *ngIf="loading()" class="text-center py-5">
+            <div class="spinner-border text-primary"></div>
+            <p class="mt-2 text-muted">Loading...</p>
+          </div>
+
+          <div *ngIf="!loading() && selectedCount() === 0" class="text-center py-5 text-muted">
+            <i class="bi bi-info-circle fs-1"></i>
+            <p>Select at least one column to preview the data.</p>
+          </div>
+
+          <div *ngIf="!loading() && selectedCount() > 0" class="table-responsive preview-table">
+            <table class="table table-hover table-sm">
+              <thead class="table-light sticky-header">
+                <tr>
+                  <th *ngFor="let col of columns()" [hidden]="!isSelected(col.field)">
+                    {{ col.label }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of filteredRows()">
+                  <td *ngFor="let col of columns()" [hidden]="!isSelected(col.field)">
+                    {{ cellValue(row, col.field) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <p class="text-muted small mb-0" *ngIf="totalRows() > rows().length">
+              Showing first {{ rows().length }} rows. The full {{ totalRows() | number }} rows
+              will be in the downloaded file.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
