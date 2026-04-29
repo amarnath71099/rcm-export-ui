@@ -21,9 +21,10 @@ export class ServiceApiService {
     return this.http.get<ColumnInfo[]>(`${this.baseUrl}/${encodeURIComponent(entity)}/columns`);
   }
 
-  /** Get a paged slice of rows for preview. */
-  getRows(entity: string, take = 100, skip = 0): Observable<RowsResponse> {
-    const params = new HttpParams().set('take', take).set('skip', skip);
+  /** Get a paged slice of rows for preview, optionally filtered by a search term. */
+  getRows(entity: string, take = 100, skip = 0, search = ''): Observable<RowsResponse> {
+    let params = new HttpParams().set('take', take).set('skip', skip);
+    if (search.trim()) params = params.set('search', search.trim());
     return this.http.get<RowsResponse>(
       `${this.baseUrl}/${encodeURIComponent(entity)}/rows`,
       { params }

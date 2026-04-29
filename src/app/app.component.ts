@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, effect, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ServiceApiService } from './services/service-api.service';
@@ -27,6 +27,9 @@ export class AppComponent implements OnInit {
   errorMsg       = signal<string | null>(null);
   searchTerm     = signal('');
 
+  /** Debounce timer id for search-driven row refetches. */
+  private searchDebounce: any = null;
+
   // ----- derived -----
   selectedCount = computed(() => this.selectedCols().size);
   allSelected   = computed(() =>
@@ -34,16 +37,23 @@ export class AppComponent implements OnInit {
     this.columns().every(c => this.selectedCols().has(c.field))
   );
 
-  filteredRows = computed(() => {
-    const q = this.searchTerm().toLowerCase().trim();
-    if (!q) return this.rows();
+  /** Rows currently loaded for preview — already filtered by the server. */
+  filteredRows = computed(() => this.rows());
 
-    return this.rows().filter(r =>
-      Object.values(r).some(v =>
-        v !== null && v !== undefined && String(v).toLowerCase().includes(q)
-      )
-    );
-  });
+  /** True when a search filter is active. */
+  hasSearch = computed(() => this.searchTerm().trim().length > 0);
+
+  constructor() {
+    // Whenever the search term changes, debounce 300ms and refetch from server.
+    effect(() => {
+      const term = this.searchTerm();
+      const entity = this.selectedEntity();
+      if (!entity) return;
+
+      clearTimeout(this.searchDebounce);
+      this.searchDebounce = setTimeout(() => this.loadRows(entity, term), 300);
+    });
+  }
 
   ngOnInit(): void {
     this.loadEntities();
@@ -55,7 +65,6 @@ export class AppComponent implements OnInit {
       next: list => {
         this.entities.set(list);
         if (list.length > 0) {
-          // Default to "Service" if present, else first entity
           const def = list.find(e => e.name === 'Service') ?? list[0];
           this.selectEntity(def.name);
         }
@@ -67,23 +76,24 @@ export class AppComponent implements OnInit {
   selectEntity(name: string) {
     this.selectedEntity.set(name);
     this.searchTerm.set('');
-    this.loadColumnsAndRows(name);
+    this.loadColumns(name);
+    this.loadRows(name, '');
   }
 
-  loadColumnsAndRows(entity: string) {
-    this.loading.set(true);
-
+  loadColumns(entity: string) {
     this.api.getColumns(entity).subscribe({
       next: cols => {
         this.columns.set(cols);
-        // Pre-select the first 5 columns (or fewer)
         const defaults = cols.slice(0, 5).map(c => c.field);
         this.selectedCols.set(new Set(defaults));
       },
       error: err => this.errorMsg.set('Failed to load columns: ' + err.message)
     });
+  }
 
-    this.api.getRows(entity, 100, 0).subscribe({
+  loadRows(entity: string, search: string) {
+    this.loading.set(true);
+    this.api.getRows(entity, 100, 0, search).subscribe({
       next: (res: RowsResponse) => {
         this.rows.set(res.items);
         this.totalRows.set(res.total);
@@ -130,13 +140,15 @@ export class AppComponent implements OnInit {
     this.api.export({
       entity: this.selectedEntity(),
       columns: cols,
-      format: this.format()
+      format: this.format(),
+      search: this.searchTerm().trim() || undefined,
     }).subscribe({
       next: blob => {
         const ext = this.format() === 'excel' ? 'xlsx'
                    : this.format() === 'pdf' ? 'pdf' : 'csv';
         const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '');
-        this.triggerDownload(blob, `${this.selectedEntity()}_${stamp}.${ext}`);
+        const suffix = this.hasSearch() ? '_filtered' : '';
+        this.triggerDownload(blob, `${this.selectedEntity()}${suffix}_${stamp}.${ext}`);
         this.exporting.set(false);
       },
       error: err => {

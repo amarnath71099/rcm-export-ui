@@ -99,6 +99,26 @@
   }
 }
 
+/* Keep the columns + format + download button visible while the user
+   scrolls the long preview table on the right. */
+.sticky-panel {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  /* Hide horizontal scrollbar but allow vertical scroll for very long column lists */
+  scrollbar-width: thin;
+}
+
+@media (max-width: 991.98px) {
+  /* On tablets/phones the layout collapses to one column — disable sticky there */
+  .sticky-panel {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 .card {
   border: none;
   border-radius: 12px;

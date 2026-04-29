@@ -22,4 +22,6 @@ export interface ExportRequest {
   entity: string;
   columns: string[];
   format: ExportFormat;
+  /** Optional — server filters rows by this before exporting. */
+  search?: string;
 }

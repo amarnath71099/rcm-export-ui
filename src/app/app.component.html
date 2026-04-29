@@ -40,8 +40,9 @@
 
   <div class="row g-4">
 
-    <!-- LEFT: column picker + format -->
+    <!-- LEFT: column picker + format (sticky on scroll) -->
     <div class="col-lg-4">
+     <div class="sticky-panel">
       <div class="card shadow-sm">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
           <strong><i class="bi bi-list-check me-2"></i>Columns</strong>
@@ -110,10 +111,24 @@
                   [disabled]="exporting() || selectedCount() === 0 || !selectedEntity()">
             <span *ngIf="exporting()" class="spinner-border spinner-border-sm me-2"></span>
             <i *ngIf="!exporting()" class="bi bi-download me-2"></i>
-            {{ exporting() ? 'Generating...' : 'Download ' + (totalRows() | number) + ' rows' }}
+            <ng-container *ngIf="!exporting()">
+              <ng-container *ngIf="hasSearch(); else fullDownload">
+                Download {{ totalRows() | number }} matching row<ng-container *ngIf="totalRows() !== 1">s</ng-container>
+              </ng-container>
+              <ng-template #fullDownload>
+                Download {{ totalRows() | number }} rows
+              </ng-template>
+            </ng-container>
+            <ng-container *ngIf="exporting()">Generating...</ng-container>
           </button>
+
+          <small *ngIf="hasSearch()" class="text-muted d-block mt-2 text-center">
+            <i class="bi bi-funnel-fill me-1"></i>
+            Only rows matching "<strong>{{ searchTerm() }}</strong>" will be exported.
+          </small>
         </div>
       </div>
+     </div>
     </div>
 
     <!-- RIGHT: preview -->
@@ -122,7 +137,7 @@
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
           <strong><i class="bi bi-table me-2"></i>{{ selectedEntity() || 'No entity' }} — Preview</strong>
           <small class="text-muted">
-            {{ rows().length }} of {{ totalRows() | number }} shown
+            {{ rows().length }} of {{ totalRows() | number }} {{ hasSearch() ? 'matching' : '' }} shown
           </small>
         </div>
 
