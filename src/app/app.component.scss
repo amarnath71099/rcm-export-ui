@@ -1,3 +1,6 @@
+/* ======================================================================
+   Entity pills (top selector)
+   ====================================================================== */
 .entity-grid {
   display: flex;
   flex-wrap: wrap;
@@ -8,13 +11,13 @@
   border: 2px solid #dee2e6;
   background: #fff;
   border-radius: 999px;
-  padding: 8px 16px;
+  padding: 6px 14px;
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
   cursor: pointer;
   transition: all 0.15s ease;
-  min-width: 130px;
+  min-width: 120px;
 
   .entity-name {
     font-weight: 600;
@@ -25,7 +28,7 @@
   .entity-meta {
     font-size: 11px;
     color: #adb5bd;
-    margin-top: 2px;
+    margin-top: 1px;
   }
 
   &:hover {
@@ -42,43 +45,87 @@
   }
 }
 
+/* ======================================================================
+   LEFT panel — Columns + Format + Download all inside the viewport.
+   The column list scrolls inside the columns card; the action card
+   (Format + Download) is always visible just below it.
+   ====================================================================== */
+.action-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 12px;
+}
+
+.columns-card {
+  display: flex;
+  flex-direction: column;
+
+  .card-header { flex: 0 0 auto; padding: 10px 16px; }
+
+  .columns-body {
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+}
+
+.select-all-row {
+  flex: 0 0 auto;
+  margin-bottom: 6px !important;
+}
+
+/* Column checkbox list scrolls internally — bounded by viewport so the
+   action card below always remains within the visible area. */
 .column-list {
-  max-height: 380px;
+  /* leaves room for: header (~140px) + entity pills (~120px) + columns header
+     (~50px) + select-all (~32px) + action card (~170px) + page padding (~64px) */
+  max-height: calc(100vh - 560px);
+  min-height: 120px;
   overflow-y: auto;
   padding-right: 4px;
 
   .form-check {
-    padding: 6px 8px 6px 32px;
+    padding: 4px 8px 4px 32px;
     border-radius: 6px;
     transition: background 0.15s;
+    margin-bottom: 0;
 
     &:hover { background: #f1f3f9; }
   }
 }
 
-.format-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+/* Action card — Format buttons + Download — always visible */
+.action-card {
+  flex: 0 0 auto;
+
+  .card-body { padding: 12px 14px; }
+}
+
+.format-row {
+  display: flex;
+  gap: 8px;
 }
 
 .format-btn {
+  flex: 1 1 0;
   border: 2px solid #dee2e6;
   background: #fff;
-  border-radius: 10px;
-  padding: 16px 8px;
+  border-radius: 8px;
+  padding: 8px 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   cursor: pointer;
   transition: all 0.15s ease;
 
-  i      { font-size: 28px; color: #6c757d; }
-  span   { font-weight: 600; font-size: 14px; }
-  small  { color: #adb5bd; font-size: 11px; }
+  i      { font-size: 20px; color: #6c757d; }
+  span   { font-weight: 600; font-size: 12px; }
 
-  &:hover { border-color: #0d6efd; transform: translateY(-2px); }
+  &:hover { border-color: #0d6efd; }
 
   &.active {
     border-color: #0d6efd;
@@ -87,9 +134,37 @@
   }
 }
 
+.download-btn {
+  font-weight: 600;
+  padding: 9px;
+  font-size: 14px;
+}
+
+/* ======================================================================
+   RIGHT panel — preview also fits in viewport, with internal table scroll
+   ====================================================================== */
+.preview-card {
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 12px;
+
+  .card-header { flex: 0 0 auto; padding: 10px 16px; }
+
+  .preview-body {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+}
+
 .preview-table {
-  max-height: 600px;
+  /* same offset logic as the column list */
+  max-height: calc(100vh - 360px);
+  min-height: 200px;
   overflow: auto;
+  flex: 1 1 auto;
 
   .sticky-header th {
     position: sticky;
@@ -99,26 +174,9 @@
   }
 }
 
-/* Keep the columns + format + download button visible while the user
-   scrolls the long preview table on the right. */
-.sticky-panel {
-  position: sticky;
-  top: 16px;
-  max-height: calc(100vh - 32px);
-  overflow-y: auto;
-  /* Hide horizontal scrollbar but allow vertical scroll for very long column lists */
-  scrollbar-width: thin;
-}
-
-@media (max-width: 991.98px) {
-  /* On tablets/phones the layout collapses to one column — disable sticky there */
-  .sticky-panel {
-    position: static;
-    max-height: none;
-    overflow: visible;
-  }
-}
-
+/* ======================================================================
+   Generic card overrides — tighter so the layout breathes
+   ====================================================================== */
 .card {
   border: none;
   border-radius: 12px;
@@ -127,5 +185,17 @@
 .card-header {
   border-bottom: 1px solid #e9ecef;
   border-radius: 12px 12px 0 0 !important;
-  padding: 14px 18px;
+}
+
+/* ======================================================================
+   Mobile / tablet — stack vertically and let the page scroll naturally
+   ====================================================================== */
+@media (max-width: 991.98px) {
+  .action-panel,
+  .preview-card {
+    position: static;
+  }
+
+  .column-list  { max-height: 280px; }
+  .preview-table { max-height: 480px; }
 }

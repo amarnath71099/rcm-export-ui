@@ -40,100 +40,103 @@
 
   <div class="row g-4">
 
-    <!-- LEFT: column picker + format (sticky on scroll) -->
+    <!-- LEFT: column picker + format (single self-contained panel that fits viewport) -->
     <div class="col-lg-4">
-     <div class="sticky-panel">
-      <div class="card shadow-sm">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-          <strong><i class="bi bi-list-check me-2"></i>Columns</strong>
-          <span class="badge bg-primary rounded-pill">{{ selectedCount() }} selected</span>
-        </div>
-        <div class="card-body">
+      <div class="action-panel">
 
-          <div *ngIf="columns().length === 0" class="text-muted text-center py-3">
-            <i class="bi bi-arrow-up"></i> Pick an entity above
+        <!-- Columns card: header fixed, list scrolls internally -->
+        <div class="card shadow-sm columns-card">
+          <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <strong><i class="bi bi-list-check me-2"></i>Columns</strong>
+            <span class="badge bg-primary rounded-pill">{{ selectedCount() }} selected</span>
           </div>
 
-          <ng-container *ngIf="columns().length > 0">
-            <div class="form-check mb-2 border-bottom pb-2">
-              <input class="form-check-input" type="checkbox" id="selectAll"
-                     [checked]="allSelected()"
-                     (change)="toggleSelectAll()">
-              <label class="form-check-label fw-semibold" for="selectAll">
-                Select All
-              </label>
+          <div class="card-body columns-body">
+            <div *ngIf="columns().length === 0" class="text-muted text-center py-3">
+              <i class="bi bi-arrow-up"></i> Pick an entity above
             </div>
 
-            <div class="column-list">
-              <div class="form-check" *ngFor="let col of columns()">
-                <input class="form-check-input" type="checkbox"
-                       [id]="'col-' + col.field"
-                       [checked]="isSelected(col.field)"
-                       (change)="toggleColumn(col.field)">
-                <label class="form-check-label" [for]="'col-' + col.field">
-                  {{ col.label }}
+            <ng-container *ngIf="columns().length > 0">
+              <div class="form-check mb-2 border-bottom pb-2 select-all-row">
+                <input class="form-check-input" type="checkbox" id="selectAll"
+                       [checked]="allSelected()"
+                       (change)="toggleSelectAll()">
+                <label class="form-check-label fw-semibold" for="selectAll">
+                  Select All
                 </label>
               </div>
-            </div>
-          </ng-container>
-        </div>
-      </div>
 
-      <!-- Format -->
-      <div class="card shadow-sm mt-4">
-        <div class="card-header bg-white">
-          <strong><i class="bi bi-file-earmark me-2"></i>Format</strong>
-        </div>
-        <div class="card-body">
-          <div class="format-grid">
-            <button type="button" class="format-btn"
-                    [class.active]="format() === 'excel'"
-                    (click)="setFormat('excel')">
-              <i class="bi bi-file-earmark-excel-fill"></i>
-              <span>Excel</span><small>.xlsx</small>
-            </button>
-            <button type="button" class="format-btn"
-                    [class.active]="format() === 'csv'"
-                    (click)="setFormat('csv')">
-              <i class="bi bi-file-earmark-text-fill"></i>
-              <span>CSV</span><small>.csv</small>
-            </button>
-            <button type="button" class="format-btn"
-                    [class.active]="format() === 'pdf'"
-                    (click)="setFormat('pdf')">
-              <i class="bi bi-file-earmark-pdf-fill"></i>
-              <span>PDF</span><small>.pdf</small>
-            </button>
-          </div>
-
-          <button class="btn btn-primary w-100 mt-4"
-                  (click)="download()"
-                  [disabled]="exporting() || selectedCount() === 0 || !selectedEntity()">
-            <span *ngIf="exporting()" class="spinner-border spinner-border-sm me-2"></span>
-            <i *ngIf="!exporting()" class="bi bi-download me-2"></i>
-            <ng-container *ngIf="!exporting()">
-              <ng-container *ngIf="hasSearch(); else fullDownload">
-                Download {{ totalRows() | number }} matching row<ng-container *ngIf="totalRows() !== 1">s</ng-container>
-              </ng-container>
-              <ng-template #fullDownload>
-                Download {{ totalRows() | number }} rows
-              </ng-template>
+              <div class="column-list">
+                <div class="form-check" *ngFor="let col of columns()">
+                  <input class="form-check-input" type="checkbox"
+                         [id]="'col-' + col.field"
+                         [checked]="isSelected(col.field)"
+                         (change)="toggleColumn(col.field)">
+                  <label class="form-check-label" [for]="'col-' + col.field">
+                    {{ col.label }}
+                  </label>
+                </div>
+              </div>
             </ng-container>
-            <ng-container *ngIf="exporting()">Generating...</ng-container>
-          </button>
-
-          <small *ngIf="hasSearch()" class="text-muted d-block mt-2 text-center">
-            <i class="bi bi-funnel-fill me-1"></i>
-            Only rows matching "<strong>{{ searchTerm() }}</strong>" will be exported.
-          </small>
+          </div>
         </div>
+
+        <!-- Action card: format + download — always pinned at the bottom of the panel -->
+        <div class="card shadow-sm action-card">
+          <div class="card-body">
+            <div class="format-row">
+              <button type="button" class="format-btn"
+                      [class.active]="format() === 'excel'"
+                      (click)="setFormat('excel')"
+                      title="Excel (.xlsx)">
+                <i class="bi bi-file-earmark-excel-fill"></i>
+                <span>Excel</span>
+              </button>
+              <button type="button" class="format-btn"
+                      [class.active]="format() === 'csv'"
+                      (click)="setFormat('csv')"
+                      title="CSV (.csv)">
+                <i class="bi bi-file-earmark-text-fill"></i>
+                <span>CSV</span>
+              </button>
+              <button type="button" class="format-btn"
+                      [class.active]="format() === 'pdf'"
+                      (click)="setFormat('pdf')"
+                      title="PDF (.pdf)">
+                <i class="bi bi-file-earmark-pdf-fill"></i>
+                <span>PDF</span>
+              </button>
+            </div>
+
+            <button class="btn btn-primary w-100 mt-3 download-btn"
+                    (click)="download()"
+                    [disabled]="exporting() || selectedCount() === 0 || !selectedEntity()">
+              <span *ngIf="exporting()" class="spinner-border spinner-border-sm me-2"></span>
+              <i *ngIf="!exporting()" class="bi bi-download me-2"></i>
+              <ng-container *ngIf="!exporting()">
+                <ng-container *ngIf="hasSearch(); else fullDownload">
+                  Download {{ totalRows() | number }} matching row<ng-container *ngIf="totalRows() !== 1">s</ng-container>
+                </ng-container>
+                <ng-template #fullDownload>
+                  Download {{ totalRows() | number }} rows
+                </ng-template>
+              </ng-container>
+              <ng-container *ngIf="exporting()">Generating...</ng-container>
+            </button>
+
+            <small *ngIf="hasSearch()" class="text-muted d-block mt-2 text-center">
+              <i class="bi bi-funnel-fill me-1"></i>
+              Only rows matching "<strong>{{ searchTerm() }}</strong>" will be exported.
+            </small>
+          </div>
+        </div>
+
       </div>
-     </div>
     </div>
 
-    <!-- RIGHT: preview -->
+    <!-- RIGHT: preview (constrained to viewport so the right side scrolls inside, not the page) -->
     <div class="col-lg-8">
-      <div class="card shadow-sm">
+      <div class="card shadow-sm preview-card">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
           <strong><i class="bi bi-table me-2"></i>{{ selectedEntity() || 'No entity' }} — Preview</strong>
           <small class="text-muted">
@@ -141,7 +144,7 @@
           </small>
         </div>
 
-        <div class="card-body">
+        <div class="card-body preview-body">
           <div class="input-group mb-3">
             <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
             <input type="text" class="form-control"
